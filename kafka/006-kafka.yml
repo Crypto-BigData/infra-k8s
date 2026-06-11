@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: kafka
+spec:
+  serviceName: "kafka"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      tolerations:
+        - key: "db"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      containers:
+        - name: kafka
+          image: confluentinc/cp-kafka:7.6.1
+          ports:
+            - name: port-forward
+              containerPort: 39092
+            - name: internal-lb
+              containerPort: 29092
+            - name: k8s
+              containerPort: 9092
+          env:
+            - name: "KAFKA_BROKER_ID"
+              value: "1"
+            - name: "KAFKA_ZOOKEEPER_CONNECT"
+              value: zk.kafka.svc.cluster.local:2181
+            - name: "KAFKA_ADVERTISED_LISTENERS"
+              # kubectl get svc -n kafka kk -o=jsonpath="{.status.loadBalancer.ingress[0].ip}"
+              value: PLAINTEXT_K8S://kk.kafka.svc.cluster.local:9092,PLAINTEXT_INTERNAL_LB://10.148.0.52:29092,PLAINTEXT_PORT_FORWARD://localhost:39092
+            - name: "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"
+              value: "PLAINTEXT:PLAINTEXT,PLAINTEXT_K8S:PLAINTEXT,PLAINTEXT_INTERNAL_LB:PLAINTEXT,PLAINTEXT_PORT_FORWARD:PLAINTEXT"
+            - name: "KAFKA_INTER_BROKER_LISTENER_NAME"
+              value: PLAINTEXT_K8S
+            - name: "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR"
+              value: "1"
+            - name: "KAFKA_AUTO_CREATE_TOPICS_ENABLE"
+              value: "false"
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /var/lib/kafka
+          resources:
+            limits:
+              cpu: 500m
+              memory: 5000M
+            requests:
+              cpu: 400m
+              memory: 500M
+      securityContext:
+        fsGroup: 1000 # NOTE: to fix: zookeeper can not write to the storage
+  volumeClaimTemplates:
+    - metadata:
+        name: kafka-data
+      spec:
+        storageClassName: local-path
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 32Gi
+---
+# kubectl get svc -n kafka kk -o=jsonpath="{.status.loadBalancer.ingress[0].ip}"
+apiVersion: v1
+kind: Service
+metadata:
+  name: kk
+  namespace: kafka
+spec:
+  ports:
+    - name: port-forward
+      port: 39092
+    - name: internal-lb
+      port: 29092
+    - name: k8s
+      port: 9092
+  selector:
+    app: kafka
