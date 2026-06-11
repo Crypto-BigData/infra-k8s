@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickhouse-config
+  namespace: app
+data:
+  custom.xml: |
+    <clickhouse>
+        <trace_log remove="1"/>
+        <text_log remove="1"/>
+        <processors_profile_log remove="1"/>
+        <background_schedule_pool_log remove="1"/>
+        <query_metric_log remove="1"/>
+        <asynchronous_metric_log remove="1"/>
+
+        <metric_log>
+            <flush_interval_milliseconds>5000</flush_interval_milliseconds>
+        </metric_log>
+
+        <query_log>
+            <flush_interval_milliseconds>5000</flush_interval_milliseconds>
+        </query_log>
+
+        <mark_cache_size>134217728</mark_cache_size>          <!-- 128MB -->
+        <uncompressed_cache_size>268435456</uncompressed_cache_size> <!-- 256MB -->
+        <max_server_memory_usage_to_ram_ratio>0.8</max_server_memory_usage_to_ram_ratio>
+        <max_concurrent_queries>10</max_concurrent_queries>
+    </clickhouse>
+  users.xml: |
+    <clickhouse>
+        <profiles>
+            <default>
+                <max_memory_usage>600000000</max_memory_usage>
+                <max_bytes_before_external_group_by>200000000</max_bytes_before_external_group_by>
+                <max_bytes_before_external_sort>200000000</max_bytes_before_external_sort>
+
+            </default>
+        </profiles>
+    </clickhouse>
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+  namespace: app
+spec:
+  serviceName: "clickhouse"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clickhouse
+  template:
+    metadata:
+      labels:
+        app: clickhouse
+    spec:
+      containers:
+        - name: clickhouse
+          image: clickhouse/clickhouse-server:latest
+          envFrom:
+            - configMapRef:
+                name: clickhouse-env
+          ports:
+            - containerPort: 8123 # HTTP
+            - containerPort: 9000 # Native
+          volumeMounts:
+            - name: clickhouse-data
+              mountPath: /var/lib/clickhouse
+            - name: clickhouse-config
+              mountPath: /etc/clickhouse-server/config.d/custom.xml
+              subPath: custom.xml
+            - name: clickhouse-config
+              mountPath: /etc/clickhouse-server/users.d/users.xml
+              subPath: users.xml
+          resources:
+            requests:
+              cpu: 400m
+              memory: 700M
+      volumes:
+        - name: clickhouse-config
+          configMap:
+            name: clickhouse-config
+  volumeClaimTemplates:
+    - metadata:
+        name: clickhouse-data
+      spec:
+        storageClassName: local-path
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse
+  namespace: app
+  labels:
+    app: clickhouse
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8123
+      targetPort: 8123
+      name: http
+    - port: 9000
+      targetPort: 9000
+      name: native
+  selector:
+    app: clickhouse

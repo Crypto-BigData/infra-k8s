@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickhouse-ngrok-env
+  namespace: app
+data:
+  NGROK_TARGET: "http://clickhouse.app.svc.cluster.local:8123"
+  NGROK_DOMAIN: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clickhouse-ngrok
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clickhouse-ngrok
+  template:
+    metadata:
+      labels:
+        app: clickhouse-ngrok
+    spec:
+      containers:
+        - name: ngrok
+          image: ngrok/ngrok:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              if [ -n "${NGROK_DOMAIN}" ]; then
+                ngrok http --log=stdout --log-format=logfmt --domain="${NGROK_DOMAIN}" "${NGROK_TARGET}"
+              else
+                ngrok http --log=stdout --log-format=logfmt "${NGROK_TARGET}"
+              fi
+          env:
+            - name: NGROK_AUTHTOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ngrok-auth
+                  key: NGROK_AUTHTOKEN
+            - name: NGROK_TARGET
+              valueFrom:
+                configMapKeyRef:
+                  name: clickhouse-ngrok-env
+                  key: NGROK_TARGET
+            - name: NGROK_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: clickhouse-ngrok-env
+                  key: NGROK_DOMAIN
+          ports:
+            - containerPort: 4040
+              name: inspector
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64M
