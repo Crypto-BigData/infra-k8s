@@ -66,10 +66,10 @@ data:
           - targets:
               - redis-exporter.monitor.svc.cluster.local:9121
 
-      - job_name: clickhouse-exporter
+      - job_name: clickhouse
         static_configs:
           - targets:
-              - clickhouse-exporter.monitor.svc.cluster.local:9116
+              - clickhouse.app.svc.cluster.local:9363
 
       - job_name: blackbox-http
         metrics_path: /probe

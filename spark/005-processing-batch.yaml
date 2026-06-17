@@ -12,8 +12,7 @@ spec:
     type: Python
     pythonVersion: "3"
     mode: cluster
-    image: processing-batch:local
-    imagePullPolicy: Never
+    image: lucaswux/processing-batch:dev-20260617-224105
     mainApplicationFile: local:///opt/app/src/processing_batch/main.py
     sparkVersion: "3.5.8"
     restartPolicy:
@@ -24,107 +23,23 @@ spec:
     sparkConf:
       spark.jars.ivy: /tmp/.ivy2
       spark.sql.session.timeZone: UTC
-      spark.executorEnv.PYTHONPATH: /opt/app/src
-      spark.kubernetes.driverEnv.PYTHONPATH: /opt/app/src
-      spark.kubernetes.driverEnv.MINIO_ENDPOINT: http://minio.app.svc.cluster.local:9000
-      spark.executorEnv.MINIO_ENDPOINT: http://minio.app.svc.cluster.local:9000
-      spark.kubernetes.driverEnv.MINIO_ACCESS_KEY: app
-      spark.executorEnv.MINIO_ACCESS_KEY: app
-      spark.kubernetes.driverEnv.MINIO_SECRET_KEY: 1cbed213baa81a9632d
-      spark.executorEnv.MINIO_SECRET_KEY: 1cbed213baa81a9632d
-      spark.kubernetes.driverEnv.CLICKHOUSE_HOST: clickhouse.app.svc.cluster.local
-      spark.executorEnv.CLICKHOUSE_HOST: clickhouse.app.svc.cluster.local
-      spark.kubernetes.driverEnv.CLICKHOUSE_HTTP_PORT: "8123"
-      spark.executorEnv.CLICKHOUSE_HTTP_PORT: "8123"
-      spark.kubernetes.driverEnv.CLICKHOUSE_USER: default
-      spark.executorEnv.CLICKHOUSE_USER: default
-      spark.kubernetes.driverEnv.CLICKHOUSE_PASSWORD: 62c54f9f458d920faa0c
-      spark.executorEnv.CLICKHOUSE_PASSWORD: 62c54f9f458d920faa0c
     driver:
       cores: 1
+      coreRequest: "500m"
       memory: 512m
       serviceAccount: processing-stream
       labels:
         app.kubernetes.io/name: processing-batch
-      env:
-        - name: PYTHONPATH
-          value: /opt/app/src
-        - name: MINIO_ENDPOINT
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: MINIO_ENDPOINT
-        - name: MINIO_ACCESS_KEY
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: MINIO_ACCESS_KEY
-        - name: MINIO_SECRET_KEY
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: MINIO_SECRET_KEY
-        - name: CLICKHOUSE_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: CLICKHOUSE_HOST
-        - name: CLICKHOUSE_HTTP_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: CLICKHOUSE_HTTP_PORT
-        - name: CLICKHOUSE_USER
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: CLICKHOUSE_USER
-        - name: CLICKHOUSE_PASSWORD
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: CLICKHOUSE_PASSWORD
+      envFrom:
+        - configMapRef:
+            name: processing-batch-config
     executor:
       instances: 1
       cores: 1
+      coreRequest: "500m"
       memory: 512m
       labels:
         app.kubernetes.io/name: processing-batch
-      env:
-        - name: PYTHONPATH
-          value: /opt/app/src
-        - name: MINIO_ENDPOINT
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: MINIO_ENDPOINT
-        - name: MINIO_ACCESS_KEY
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: MINIO_ACCESS_KEY
-        - name: MINIO_SECRET_KEY
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: MINIO_SECRET_KEY
-        - name: CLICKHOUSE_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: CLICKHOUSE_HOST
-        - name: CLICKHOUSE_HTTP_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: CLICKHOUSE_HTTP_PORT
-        - name: CLICKHOUSE_USER
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: CLICKHOUSE_USER
-        - name: CLICKHOUSE_PASSWORD
-          valueFrom:
-            configMapKeyRef:
-              name: processing-batch-config
-              key: CLICKHOUSE_PASSWORD
+      envFrom:
+        - configMapRef:
+            name: processing-batch-config

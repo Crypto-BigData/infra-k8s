@@ -25,6 +25,15 @@ data:
         <uncompressed_cache_size>268435456</uncompressed_cache_size> <!-- 256MB -->
         <max_server_memory_usage_to_ram_ratio>0.8</max_server_memory_usage_to_ram_ratio>
         <max_concurrent_queries>10</max_concurrent_queries>
+
+        <prometheus>
+            <endpoint>/metrics</endpoint>
+            <port>9363</port>
+            <metrics>true</metrics>
+            <events>true</events>
+            <asynchronous_metrics>true</asynchronous_metrics>
+            <status_info>true</status_info>
+        </prometheus>
     </clickhouse>
   users.xml: |
     <clickhouse>
@@ -63,6 +72,7 @@ spec:
           ports:
             - containerPort: 8123 # HTTP
             - containerPort: 9000 # Native
+            - containerPort: 9363 # Prometheus
           volumeMounts:
             - name: clickhouse-data
               mountPath: /var/lib/clickhouse
@@ -84,11 +94,11 @@ spec:
     - metadata:
         name: clickhouse-data
       spec:
-        storageClassName: local-path
+        storageClassName: standard-rwo
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
-            storage: 20Gi
+            storage: 10Gi
 ---
 apiVersion: v1
 kind: Service
@@ -106,5 +116,35 @@ spec:
     - port: 9000
       targetPort: 9000
       name: native
+    - port: 9363
+      targetPort: 9363
+      name: metrics
   selector:
     app: clickhouse
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: clickhouse-ingress
+  namespace: app
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-production"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - clickhouse.nukenake.xyz
+      secretName: clickhouse-nukenake-xyz-tls
+  rules:
+    - host: clickhouse.nukenake.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: clickhouse
+                port:
+                  number: 8123

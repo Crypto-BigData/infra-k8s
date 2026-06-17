@@ -7,8 +7,7 @@ spec:
   type: Python
   pythonVersion: "3"
   mode: cluster
-  image: processing-stream:local
-  imagePullPolicy: Never
+  image: lucaswux/processing-stream:dev-20260617-223755
   mainApplicationFile: local:///opt/app/src/processing_stream/kafka_raw_to_minio.py
   sparkVersion: "3.5.8"
   restartPolicy:
@@ -21,227 +20,23 @@ spec:
     spark.jars.ivy: /tmp/.ivy2
     spark.sql.session.timeZone: UTC
     spark.sql.streaming.stopGracefullyOnShutdown: "true"
-    spark.executorEnv.PYTHONPATH: /opt/app/src
-    spark.kubernetes.driverEnv.PYTHONPATH: /opt/app/src
-    spark.kubernetes.driverEnv.KAFKA_BOOTSTRAP_SERVERS: kk.kafka.svc.cluster.local:9092
-    spark.executorEnv.KAFKA_BOOTSTRAP_SERVERS: kk.kafka.svc.cluster.local:9092
-    spark.kubernetes.driverEnv.KAFKA_TOPICS: production-ingestion-collector-klines-1m,production-ingestion-collector-news
-    spark.executorEnv.KAFKA_TOPICS: production-ingestion-collector-klines-1m,production-ingestion-collector-news
-    spark.kubernetes.driverEnv.KAFKA_STARTING_OFFSETS: latest
-    spark.executorEnv.KAFKA_STARTING_OFFSETS: latest
-    spark.kubernetes.driverEnv.KAFKA_MAX_OFFSETS_PER_TRIGGER: "50000"
-    spark.executorEnv.KAFKA_MAX_OFFSETS_PER_TRIGGER: "50000"
-    spark.kubernetes.driverEnv.MINIO_ACCESS_KEY: app
-    spark.executorEnv.MINIO_ACCESS_KEY: app
-    spark.kubernetes.driverEnv.MINIO_SECRET_KEY: 1cbed213baa81a9632d
-    spark.executorEnv.MINIO_SECRET_KEY: 1cbed213baa81a9632d
-    spark.kubernetes.driverEnv.MINIO_HOST: minio.app.svc.cluster.local
-    spark.executorEnv.MINIO_HOST: minio.app.svc.cluster.local
-    spark.kubernetes.driverEnv.MINIO_PORT: "9000"
-    spark.executorEnv.MINIO_PORT: "9000"
-    spark.kubernetes.driverEnv.MINIO_SECURE: "false"
-    spark.executorEnv.MINIO_SECURE: "false"
-    spark.kubernetes.driverEnv.BUCKET_NAME: development
-    spark.executorEnv.BUCKET_NAME: development
-    spark.kubernetes.driverEnv.RAW_OUTPUT_PATH: s3a://development/raw/kafka/ingestion-collector
-    spark.executorEnv.RAW_OUTPUT_PATH: s3a://development/raw/kafka/ingestion-collector
-    spark.kubernetes.driverEnv.CHECKPOINT_PATH: s3a://development/checkpoints/processing-stream/kafka-raw
-    spark.executorEnv.CHECKPOINT_PATH: s3a://development/checkpoints/processing-stream/kafka-raw
-    spark.kubernetes.driverEnv.CLICKHOUSE_URL: http://default:62c54f9f458d920faa0c@clickhouse.app.svc.cluster.local:8123/default
-    spark.executorEnv.CLICKHOUSE_URL: http://default:62c54f9f458d920faa0c@clickhouse.app.svc.cluster.local:8123/default
-    spark.kubernetes.driverEnv.CLICKHOUSE_CHECKPOINT_PATH: s3a://development/checkpoints/processing-stream/clickhouse
-    spark.executorEnv.CLICKHOUSE_CHECKPOINT_PATH: s3a://development/checkpoints/processing-stream/clickhouse
-    spark.kubernetes.driverEnv.OUTPUT_FORMAT: parquet
-    spark.executorEnv.OUTPUT_FORMAT: parquet
-    spark.kubernetes.driverEnv.TRIGGER_PROCESSING_TIME: 30 seconds
-    spark.executorEnv.TRIGGER_PROCESSING_TIME: 30 seconds
-    spark.kubernetes.driverEnv.PROGRESS_LOG_INTERVAL_SECONDS: "10"
-    spark.executorEnv.PROGRESS_LOG_INTERVAL_SECONDS: "10"
   driver:
     cores: 1
+    coreRequest: "500m"
     memory: 512m
     serviceAccount: processing-stream
     labels:
       app.kubernetes.io/name: processing-stream
-    env:
-      - name: PYTHONPATH
-        value: /opt/app/src
-      - name: KAFKA_BOOTSTRAP_SERVERS
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: KAFKA_BOOTSTRAP_SERVERS
-      - name: KAFKA_TOPICS
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: KAFKA_TOPICS
-      - name: KAFKA_STARTING_OFFSETS
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: KAFKA_STARTING_OFFSETS
-      - name: KAFKA_MAX_OFFSETS_PER_TRIGGER
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: KAFKA_MAX_OFFSETS_PER_TRIGGER
-      - name: MINIO_ACCESS_KEY
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: MINIO_ACCESS_KEY
-      - name: MINIO_SECRET_KEY
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: MINIO_SECRET_KEY
-      - name: MINIO_HOST
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: MINIO_HOST
-      - name: MINIO_PORT
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: MINIO_PORT
-      - name: MINIO_SECURE
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: MINIO_SECURE
-      - name: BUCKET_NAME
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: BUCKET_NAME
-      - name: RAW_OUTPUT_PATH
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: RAW_OUTPUT_PATH
-      - name: CHECKPOINT_PATH
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: CHECKPOINT_PATH
-      - name: CLICKHOUSE_URL
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: CLICKHOUSE_URL
-      - name: CLICKHOUSE_CHECKPOINT_PATH
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: CLICKHOUSE_CHECKPOINT_PATH
-      - name: OUTPUT_FORMAT
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: OUTPUT_FORMAT
-      - name: TRIGGER_PROCESSING_TIME
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: TRIGGER_PROCESSING_TIME
-      - name: PROGRESS_LOG_INTERVAL_SECONDS
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: PROGRESS_LOG_INTERVAL_SECONDS
+    envFrom:
+      - configMapRef:
+          name: processing-stream-config
   executor:
     instances: 1
     cores: 1
+    coreRequest: "500m"
     memory: 512m
     labels:
       app.kubernetes.io/name: processing-stream
-    env:
-      - name: PYTHONPATH
-        value: /opt/app/src
-      - name: KAFKA_BOOTSTRAP_SERVERS
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: KAFKA_BOOTSTRAP_SERVERS
-      - name: KAFKA_TOPICS
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: KAFKA_TOPICS
-      - name: KAFKA_STARTING_OFFSETS
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: KAFKA_STARTING_OFFSETS
-      - name: KAFKA_MAX_OFFSETS_PER_TRIGGER
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: KAFKA_MAX_OFFSETS_PER_TRIGGER
-      - name: MINIO_ACCESS_KEY
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: MINIO_ACCESS_KEY
-      - name: MINIO_SECRET_KEY
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: MINIO_SECRET_KEY
-      - name: MINIO_HOST
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: MINIO_HOST
-      - name: MINIO_PORT
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: MINIO_PORT
-      - name: MINIO_SECURE
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: MINIO_SECURE
-      - name: BUCKET_NAME
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: BUCKET_NAME
-      - name: RAW_OUTPUT_PATH
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: RAW_OUTPUT_PATH
-      - name: CHECKPOINT_PATH
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: CHECKPOINT_PATH
-      - name: CLICKHOUSE_URL
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: CLICKHOUSE_URL
-      - name: CLICKHOUSE_CHECKPOINT_PATH
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: CLICKHOUSE_CHECKPOINT_PATH
-      - name: OUTPUT_FORMAT
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: OUTPUT_FORMAT
-      - name: TRIGGER_PROCESSING_TIME
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: TRIGGER_PROCESSING_TIME
-      - name: PROGRESS_LOG_INTERVAL_SECONDS
-        valueFrom:
-          configMapKeyRef:
-            name: processing-stream-config
-            key: PROGRESS_LOG_INTERVAL_SECONDS
+    envFrom:
+      - configMapRef:
+          name: processing-stream-config

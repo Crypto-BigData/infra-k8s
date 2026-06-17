@@ -4,7 +4,7 @@ metadata:
   name: zookeeper
   namespace: kafka
 spec:
-  serviceName: "zookeeper"
+  serviceName: zk
   replicas: 1
   selector:
     matchLabels:
@@ -43,24 +43,24 @@ spec:
               cpu: 300m
               memory: 500M
       securityContext:
-        fsGroup: 1000 # NOTE: to fix: zookeeper can not write to the storage
+        fsGroup: 1000
   volumeClaimTemplates:
     - metadata:
         name: zk-data
       spec:
-        storageClassName: local-path
+        storageClassName: standard-rwo
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
-            storage: 32Gi
+            storage: 10Gi
     - metadata:
         name: zk-txn-logs
       spec:
-        storageClassName: local-path
+        storageClassName: standard-rwo
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
-            storage: 32Gi
+            storage: 10Gi
 ---
 apiVersion: v1
 kind: Service
